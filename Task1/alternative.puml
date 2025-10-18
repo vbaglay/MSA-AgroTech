@@ -1,0 +1,39 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C2 — Cloud-Centric архитектура системы мониторинга ферм
+
+Person(operator, "Оператор фермы", "Следит за состоянием животных и оборудования")
+Person(manager, "Менеджер / Ветврач", "Просматривает аналитику и отчёты через Cloud UI")
+
+System_Boundary(edge, "Edge Node (ферма)") {
+    Container(edge_buffer, "Edge Buffer & Sync", "Local Service", "Буферизация видеопотоков и телеметрии с камер и IoT датчиков; минимальная локальная логика")
+}
+
+System_Boundary(cloud, "Central Cloud Platform") {
+    Container(cloud_ui, "Farm Management Portal", "Web App", "Облачный дашборд для операторов и менеджеров, управление оборудованием и аналитикой")
+    Container(video_ai, "Video AI & Analytics", "AI / Video Analytics Service", "Обработка всех видеопотоков, детекция поведения, драки, болезни")
+    Container(telemetry_mgmt, "IoT & Equipment Management", "Service", "Прием данных с датчиков, управление кормушками, поилками и фильтрами")
+    Container(livestock_mgmt, "Livestock Management", "Service", "Учёт поголовья, история наблюдений, идентификация животных")
+    Container(feed_mgmt, "Feed & Inventory Management", "Service", "Учёт запасов кормов, прогноз расхода и планирование")
+    Container(auth, "Access & Identity Management", "Auth Service", "Роли, аутентификация и авторизация пользователей")
+}
+
+' --- Взаимодействия пользователей ---
+Rel(operator, cloud_ui, "Просмотр алертов, управление оборудованием и аналитикой")
+Rel(manager, cloud_ui, "Аналитика, отчёты и управление")
+
+' --- Edge ↔ Cloud ---
+Rel(edge_buffer, video_ai, "Отправка всех видеопотоков")
+Rel(edge_buffer, telemetry_mgmt, "Отправка телеметрии с устройств")
+Rel(edge_buffer, cloud_ui, "Синхронизация состояния для UI")
+
+' --- Cloud внутренние связи ---
+Rel(video_ai, livestock_mgmt, "Обновление данных о животных")
+Rel(telemetry_mgmt, feed_mgmt, "Данные о расходе кормов и состоянии оборудования")
+Rel(cloud_ui, video_ai, "Доступ к видеоаналитике и алертам")
+Rel(cloud_ui, telemetry_mgmt, "Управление оборудованием")
+Rel(cloud_ui, livestock_mgmt, "Отображение данных о животных")
+Rel(cloud_ui, feed_mgmt, "Прогнозы и учёт кормов")
+Rel(cloud_ui, auth, "Авторизация пользователей")
+@enduml

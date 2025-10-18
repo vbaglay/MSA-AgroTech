@@ -1,0 +1,43 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title C1 — Гибридная система мониторинга ферм (Edge + Cloud)
+
+Person(operator, "Оператор фермы", "Локальный мониторинг животных и оборудования")
+Person(admin, "Администратор", "Управление системой и аналитика отчетов")
+
+System(edge_system, "Edge System (ферма)", "Локальная обработка видео, управление оборудованием,\nофлайн-работа")
+System(cloud_system, "Cloud Platform", "Агрегация данных, аналитика, управление фермами")
+
+System_Ext(cameras, "Камеры наблюдения", "Системы видеонаблюдения для аналитики")
+System_Ext(equipment, "Оборудование фермы", "Кормушки, поилки, системы фильтрации")
+System_Ext(ai_service, "AI Сервис", "Нейросетевая модель для видеоаналитики")
+System_Ext(external_systems, "Внешние системы", "ERP, системы метрик")
+
+' Основные взаимодействия
+operator --> edge_system : "локальный мониторинг\nи управление в реальном времени"
+admin --> cloud_system : "настройки системы\nи просмотр аналитики"
+
+cameras --> edge_system : "видеопотоки\nдля анализа"
+edge_system --> equipment : "управление\nи сбор телеметрии"
+edge_system --> ai_service : "запросы анализа\nвидео"
+ai_service --> edge_system : "результаты\nдетекции"
+
+edge_system --> cloud_system : "синхронизация данных\n(задержка до 10 мин)"
+cloud_system --> external_systems : "экспорт метрик\nи интеграция"
+
+note right of edge_system
+<b>Автономная работа:</b>
+• Офлайн-функциональность
+• Real-time обработка
+• Локальное хранение
+end note
+
+note left of cloud_system
+<b>Централизованная платформа:</b>
+• Агрегация данных
+• Историческая аналитика
+• Управление фермами
+end note
+@endumlcs
+@enduml

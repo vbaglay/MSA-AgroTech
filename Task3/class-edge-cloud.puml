@@ -1,0 +1,93 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title C4 — Edge Node: Component Classes (Simplified)
+
+' === EDGE UI ===
+package "Edge Monitoring UI" {
+    class AlertDashboard {
+        +showAlerts()
+        +showVideoStreams()
+    }
+
+    class ControlPanel {
+        +sendCommand(DeviceCommand cmd)
+    }
+}
+
+' === Animal Behavior & Safety Context ===
+package "Animal Behavior & Safety" {
+    class VideoIngestor {
+        +captureStream()
+        +sendFrames(Frame[])
+    }
+
+    class FrameProcessor {
+        +resize(Frame)
+        +applyROI(Frame)
+        +throttleFPS(Frame[])
+    }
+
+    class AIAdapter {
+        +analyze(Frame) : Detection[]
+    }
+
+    class EventEngine {
+        +processDetections(Detection[])
+        +filterFalsePositives()
+        +generateAlerts()
+    }
+
+    class LocalStore {
+        +saveEvent(Event)
+        +getBufferedEvents() : Event[]
+    }
+}
+
+' === Equipment Control Context ===
+package "Equipment Control" {
+    class DeviceController {
+        +executeCommand(DeviceCommand)
+    }
+
+    class TelemetryCollector {
+        +collectStatus() : DeviceStatus
+    }
+
+    class DeviceStore {
+        +saveStatus(DeviceStatus)
+        +getStatusHistory() : DeviceStatus[]
+    }
+}
+
+' === Metrics Context ===
+package "Metrics & Sync" {
+    class MetricAggregator {
+        +aggregateMetrics(Metric[])
+    }
+
+    class SyncAgent {
+        +syncWithCloud()
+        +bufferEvents(Event[])
+    }
+}
+
+' === RELATIONSHIPS ===
+AlertDashboard --> EventEngine : "displays alerts"
+ControlPanel --> DeviceController : "sends commands"
+
+VideoIngestor --> FrameProcessor : "raw frames"
+FrameProcessor --> AIAdapter : "processed frames"
+AIAdapter --> EventEngine : "detections"
+EventEngine --> LocalStore : "store events"
+EventEngine --> AlertDashboard : "publish alerts"
+EventEngine --> DeviceController : "initiate actions"
+
+DeviceController --> TelemetryCollector : "request status"
+TelemetryCollector --> DeviceStore : "store telemetry"
+DeviceStore --> MetricAggregator : "provide metrics"
+
+SyncAgent --> MetricAggregator : "aggregate local metrics"
+SyncAgent --> LocalStore : "sync events"
+SyncAgent --> MetricAggregator : "send to cloud"
+@enduml
