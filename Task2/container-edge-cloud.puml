@@ -1,0 +1,46 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C2 — Edge–Cloud архитектура системы мониторинга ферм (с указанием интеграций и протоколов)
+
+Person(operator, "Оператор фермы", "Следит за состоянием животных и оборудования на месте")
+Person(admin, "Администратор / Ветврач", "Управляет настройками, просматривает аналитику и отчёты")
+
+System_Boundary(edge, "Edge Node (ферма)") {
+    Container(edge_ui, "Edge Monitoring UI", "Web / Local app", "Панель оператора: отображение корпусов, камер, алертов, управление оборудованием")
+    Container(behavior, "Animal Behavior & Safety Context", "AI / Video Analytics", "Распознаёт беспокойство, драки, задавливание; генерирует алерты")
+    Container(equipment, "Farm Equipment & Environment Control Context", "IoT Controller", "Управляет кормушками, поилками, фильтрацией воды; получает данные от сенсоров")
+    Container(metrics, "Farm Infrastructure & Metrics Context (Edge Agent)", "Sync Service", "Собирает локальные метрики, буферизует данные, синхронизирует с облаком при наличии связи")
+}
+
+System_Boundary(cloud, "Central Server (Cloud Platform)") {
+    Container(cloud_ui, "Farm Management Portal", "Web App", "Облачный интерфейс для администраторов, аналитики, управления фермами")
+    Container(livestock, "Livestock Management Context", "Service", "Учёт поголовья, идентификация животных, хранение истории наблюдений")
+    Container(feed, "Feed & Inventory Management Context", "Service", "Учёт и прогноз запасов кормов, планирование расхода")
+    Container(metrics_cloud, "Farm Infrastructure & Metrics Context (Cloud Collector)", "Service", "Хранит, агрегирует и экспортирует метрики, интеграции с внешними системами")
+    Container(auth, "Access & Identity Context", "Auth Service", "Роли, аутентификация, авторизация, токены для Edge и Cloud UI")
+}
+
+' --- Взаимодействия пользователей ---
+Rel(operator, edge_ui, "Наблюдает, подтверждает алерты, управляет оборудованием", "HTTPS (локальная сеть)")
+Rel(admin, cloud_ui, "Просматривает аналитику, управляет настройками", "HTTPS / OAuth2")
+
+' --- Взаимодействия внутри Edge ---
+Rel(edge_ui, behavior, "Отображение алертов и видеоаналитики", "Redis Streams / Local Event Bus")
+Rel(edge_ui, equipment, "Команды управления устройствами", "Redis Bus / MQTT локально")
+Rel(behavior, equipment, "Реакция на события (например, остановка подачи корма)", "Redis Bus")
+Rel(behavior, metrics, "Передача событий и метрик", "Redis Pub/Sub")
+Rel(equipment, metrics, "Телеметрия устройств", "MQTT / Modbus TCP / OPC-UA")
+
+' --- Edge ↔ Cloud синхронизация ---
+Rel(metrics, metrics_cloud, "Синхронизация данных, буферизация при потере связи", "MQTT QoS1 / HTTPS (REST/gRPC)")
+
+' --- Взаимодействия внутри Cloud ---
+Rel(metrics_cloud, livestock, "Передача сводных данных о животных", "Kafka Stream / Async Event")
+Rel(metrics_cloud, feed, "Передача данных о запасах и потреблении", "Kafka Stream / Event Bus")
+Rel(cloud_ui, livestock, "Просмотр данных о животных", "REST / GraphQL")
+Rel(cloud_ui, feed, "Просмотр прогнозов кормов", "REST / GraphQL")
+Rel(cloud_ui, metrics_cloud, "Доступ к метрикам и статусам", "REST / WebSocket")
+Rel(cloud_ui, auth, "Авторизация", "OAuth2 / OpenID Connect")
+Rel(edge_ui, auth, "Авторизация при доступе (через локальный кэш токена)", "JWT / Cached Auth")
+@enduml

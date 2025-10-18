@@ -1,0 +1,87 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C3 — Компоненты системы мониторинга ферм (Edge + Cloud)
+
+Person(operator, "Оператор фермы", "Следит за состоянием животных и оборудования на месте")
+Person(admin, "Администратор / Ветврач", "Управляет настройками, просматривает аналитику и отчёты")
+
+' === EDGE NODE ===
+System_Boundary(edge, "Edge Node (ферма)") {
+    Container(edge_ui, "Edge Monitoring UI", "Web / Local app", "Панель оператора: отображение корпусов,\n камер, алертов, управление оборудованием") {
+        Component(alert_dashboard, "Alert Dashboard", "React", "Показывает алерты (красные точки) и видеопотоки")
+        Component(control_panel, "Control Panel", "React", "Отправка команд на кормушки, поилки, фильтры")
+    }
+
+    Container(behavior, "Animal Behavior & Safety ", "AI / Video Analytics", "Распознаёт беспокойство,\n драки, задавливание; генерирует алерты") {
+        Component(video_ingestor, "Video Ingestor", "Python / FFmpeg", "Захват видеопотоков с камер")
+        Component(frame_processor, "Frame Preprocessor", "Python", "Resize, ROI, fps-throttle, подготовка кадров для AI")
+        Component(ai_adapter, "AI Adapter", "Python / gRPC", "Отправка кадров нейросети, получение детекций")
+        Component(event_engine, "Event Engine", "Python", "Обработка событий, фильтрация ложных срабатываний, генерация алертов")
+        Component(local_store, "Local Store", "SQLite/Timescale", "Буферизация инцидентов и треков при отсутствии интернета")
+    }
+
+    Container(equipment, "Farm Equipment & Environment Control ", "IoT Controller", "Управляет кормушками, поилками,\n фильтрацией воды; получает данные от сенсоров") {
+        Component(device_ctrl, "Device Controller", "Python / MQTT", "Команды на кормушки, поилки, фильтры")
+        Component(telemetry_collector, "Telemetry Collector", "Python", "Сбор данных с датчиков и состояния устройств")
+        Component(device_store, "Device Store", "SQLite", "Локальное хранение состояния оборудования")
+    }
+
+    Container(metrics, "Farm Infrastructure & Metrics  (Edge Agent)", "Sync Service", "Собирает локальные метрики, буферизует данные,\n синхронизирует с облаком при наличии связи") {
+        Component(sync_agent, "Sync Agent", "Go / Python", "Буферизация событий и метрик, синхронизация с облаком")
+        Component(metric_aggregator, "Metric Aggregator", "Python", "Подсчёт локальных KPI и метрик")
+    }
+}
+
+' === CLOUD PLATFORM ===
+System_Boundary(cloud, "Central Server (Cloud Platform)") {
+    Container(cloud_ui, "Farm Management Portal", "Web App", "Облачный интерфейс для администраторов, аналитики, управления фермами")
+
+    Container(livestock, "Livestock Management ", "Service", "Учёт поголовья, идентификация животных,\n хранение истории наблюдений") {
+        Component(animal_registry, "Animal Registry", "Service", "Учёт поголовья, идентификация животных, хранение истории наблюдений")
+    }
+
+    Container(feed, "Feed & Inventory Management ", "Service", "Учёт и прогноз запасов кормов, планирование расхода") {
+        Component(feed_planner, "Feed Planner", "Service", "Прогнозирование и управление запасами кормов")
+    }
+
+    Container(metrics_cloud, "Farm Infrastructure & Metrics  (Cloud Collector)", "Service", "Хранит, агрегирует и экспортирует метрики,\n интеграции с внешними системами") {
+        Component(cloud_store, "Cloud Store", "TimescaleDB / MinIO", "Агрегация метрик и видеофрагментов, долгосрочное хранение")
+    }
+
+    Container(auth, "Access & Identity ", "Auth Service", "Роли, аутентификация, авторизация, токены для Edge и Cloud UI") {
+        Component(user_management, "User Management", "Service", "Роли, аутентификация, авторизация, токены для Edge и Cloud UI")
+    }
+}
+
+' --- Взаимодействия пользователей ---
+Rel(operator, alert_dashboard, "Просмотр алертов")
+Rel(operator, control_panel, "Отправка команд на оборудование")
+Rel(admin, cloud_ui, "Просмотр аналитики и управление настройками")
+
+' --- Взаимодействия внутри Edge ---
+Rel(video_ingestor, frame_processor, "raw frames")
+Rel(frame_processor, ai_adapter, "processed frames")
+Rel(ai_adapter, event_engine, "detections / события")
+Rel(event_engine, local_store, "сохраняет события")
+Rel(event_engine, alert_dashboard, "публикация алертов")
+Rel(control_panel, device_ctrl, "команды управления")
+Rel(device_ctrl, telemetry_collector, "проверка состояния устройств")
+Rel(telemetry_collector, device_store, "сохраняет данные")
+Rel(device_store, metric_aggregator, "передача метрик")
+Rel(event_engine, device_ctrl, "инициация действий при инцидентах")
+
+' --- Edge ↔ Cloud синхронизация ---
+Rel(sync_agent, metric_aggregator, "локальные метрики")
+Rel(sync_agent, local_store, "события для синхронизации")
+Rel(sync_agent, cloud_store, "Синхронизация событий и метрик")
+
+' --- Взаимодействия Cloud ---
+Rel(cloud_store, animal_registry, "Сводные данные о животных")
+Rel(cloud_store, feed_planner, "Данные о запасах и потреблении")
+Rel(cloud_ui, animal_registry, "Показ данных о животных")
+Rel(cloud_ui, feed_planner, "Показ прогнозов кормов")
+Rel(cloud_ui, cloud_store, "Доступ к метрикам и статусам")
+Rel(cloud_ui, user_management, "Авторизация")
+Rel(alert_dashboard, user_management, "Локальная авторизация через кэш токенов")
+@enduml

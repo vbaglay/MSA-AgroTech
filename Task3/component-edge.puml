@@ -1,0 +1,98 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C3 — Компоненты автономного Edge Node
+
+Person(operator, "Оператор фермы", "Следит за состоянием животных и оборудования")
+Person(manager, "Управляющий фермой", "Просматривает отчёты и аналитику")
+
+System_Boundary(edge, "Автономный Edge Node (ферма)") {
+
+    Container(edge_ui, "Edge Dashboard", "Web UI", "Локальная панель управления") {
+        Component(alerts_panel, "Alerts Panel", "UI", "Отображение алертов")
+        Component(video_panel, "Video Panel", "UI", "Просмотр видеопотоков")
+        Component(equipment_panel, "Equipment Panel", "UI", "Управление оборудованием")
+        Component(inventory_panel, "Inventory Panel", "UI", "Мониторинг запасов")
+        Component(health_panel, "Health Panel", "UI", "Отслеживание здоровья животных")
+    }
+
+    Container(behavior_ai, "Animal Behavior AI", "Video Analytics", "Обнаружение аномалий поведения") {
+        Component(video_ingest, "Video Ingestor", "Service", "Захват видеопотоков")
+        Component(frame_processor, "Frame Processor", "Service", "Предобработка кадров")
+        Component(ai_adapter, "AI Model Adapter", "Service", "Интеграция с нейросетью")
+        Component(event_analyzer, "Event Analyzer", "Service", "Анализ детекций")
+        Component(alert_generator, "Alert Generator", "Service", "Генерация алертов")
+    }
+
+    Container(health_monitor, "Animal Health Monitor", "Health Analytics", "Мониторинг состояния животных") {
+        Component(health_analyzer, "Health Analyzer", "Service", "Анализ поведения и признаков")
+        Component(disease_detector, "Disease Detector", "Service", "Выявление заболеваний")
+        Component(mortality_tracker, "Mortality Tracker", "Service", "Отслеживание падежа")
+    }
+
+    Container(equipment_ctrl, "Equipment Controller", "IoT Gateway", "Управление оборудованием") {
+        Component(device_manager, "Device Manager", "Service", "Обнаружение устройств")
+        Component(command_dispatcher, "Command Dispatcher", "Service", "Отправка команд")
+        Component(telemetry_collector, "Telemetry Collector", "Service", "Сбор данных с датчиков")
+    }
+
+    Container(inventory_mgr, "Inventory Manager", "Local Service", "Учёт и прогноз запасов") {
+        Component(feed_tracker, "Feed Tracker", "Service", "Учёт расхода кормов")
+        Component(consumption_predictor, "Consumption Predictor", "Service", "Прогнозирование расхода")
+        Component(water_monitor, "Water Monitor", "Service", "Мониторинг фильтрации")
+    }
+
+    Container(population_tracker, "Population Tracker", "Tracking Service", "Учёт поголовья") {
+        Component(animal_counter, "Animal Counter", "Service", "Подсчёт животных")
+        Component(growth_tracker, "Growth Tracker", "Service", "Отслеживание роста")
+        Component(headcount_reporter, "Headcount Reporter", "Service", "Формирование отчётов")
+    }
+
+    Container(data_hub, "Data Hub", "Storage Service", "Централизованное хранилище") {
+        Component(event_store, "Event Store", "Storage", "Хранение событий")
+        Component(metrics_store, "Metrics Store", "Storage", "Хранение метрик")
+        Component(video_archive, "Video Archive", "Storage", "Архив видео")
+    }
+
+    Container(auth_service, "Auth Service", "Auth Service", "Управление доступом") {
+        Component(user_manager, "User Manager", "Service", "Управление пользователями")
+    }
+}
+
+System_Ext(partner_ai, "Партнерская AI", "External Service", "Нейросетевая модель для детекции")
+
+' --- Взаимодействия пользователей ---
+Rel(operator, alerts_panel, "Просмотр алертов")
+Rel(operator, equipment_panel, "Управление оборудованием")
+Rel(manager, health_panel, "Контроль здоровья")
+
+' --- Взаимодействия с партнерской AI ---
+Rel(ai_adapter, partner_ai, "Обмен данными")
+
+' --- Взаимодействия внутри Behavior AI ---
+Rel(video_ingest, frame_processor, "Передача кадров")
+Rel(frame_processor, ai_adapter, "Подготовленные кадры")
+Rel(ai_adapter, event_analyzer, "Результаты детекции")
+Rel(event_analyzer, alert_generator, "Анализ событий")
+Rel(alert_generator, alerts_panel, "Уведомления")
+
+' --- Взаимодействия между сервисами ---
+Rel(alert_generator, health_analyzer, "Данные о поведении")
+Rel(health_analyzer, disease_detector, "Признаки заболеваний")
+Rel(telemetry_collector, feed_tracker, "Данные о расходе")
+Rel(animal_counter, growth_tracker, "Данные для роста")
+
+' --- Взаимодействия с Data Hub ---
+Rel(alert_generator, event_store, "Сохранение событий")
+Rel(telemetry_collector, metrics_store, "Сохранение метрик")
+Rel(health_analyzer, metrics_store, "Сохранение здоровья")
+
+' --- Взаимодействия с UI ---
+Rel(video_panel, video_ingest, "Запрос видеопотоков")
+Rel(equipment_panel, command_dispatcher, "Отправка команд")
+Rel(health_panel, health_analyzer, "Запрос данных")
+Rel(inventory_panel, feed_tracker, "Отображение запасов")
+
+' --- Аутентификация ---
+Rel(edge_ui, user_manager, "Проверка прав")
+@enduml

@@ -1,0 +1,58 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C2 — Автономная Edge-архитектура системы мониторинга ферм
+
+Person(operator, "Оператор фермы", "Следит за состоянием животных и оборудования на месте")
+Person(manager, "Управляющий фермой", "Просматривает отчёты и аналитику на месте")
+
+System_Boundary(edge, "Автономный Edge Node (ферма)") {
+    Container(edge_ui, "Edge Monitoring Dashboard", "Web UI", "Локальная панель управления: алерты, видео, оборудование, аналитика")
+    
+    Container(behavior_ai, "Animal Behavior AI", "Video Analytics", "Распознаёт беспокойство, драки, задавливание в реальном времени")
+    
+    Container(health_monitor, "Animal Health Monitor", "Health Analytics", "Мониторинг здоровья, детекция заболеваний, трекинг состояния")
+    
+    Container(equipment_ctrl, "Smart Equipment Controller", "IoT Gateway", "Управление кормушками, поилками, фильтрами; сбор телеметрии")
+    
+    Container(inventory_mgr, "Inventory & Feed Manager", "Local Service", "Учёт запасов кормов, прогнозирование расхода, управление инвентарём")
+    
+    Container(population_tracker, "Population Tracker", "Tracking Service", "Учёт поголовья, подсчёт животных, статистика роста")
+    
+    Container(local_auth, "Local Auth Service", "Auth Service", "Локальная аутентификация и управление ролями")
+    
+    Container(data_sync, "Local Data Hub", "Storage & Sync", "Локальное хранилище данных, офлайн-работа, опциональный экспорт")
+}
+
+' --- Взаимодействия пользователей ---
+Rel(operator, edge_ui, "Мониторинг в реальном времени, управление оборудованием")
+Rel(manager, edge_ui, "Просмотр аналитики, отчётов, управление настройками")
+
+' --- Взаимодействия внутри Edge ---
+Rel(edge_ui, behavior_ai, "Отображение алертов и видеоаналитики")
+Rel(edge_ui, equipment_ctrl, "Управление оборудованием, просмотр телеметрии")
+Rel(edge_ui, inventory_mgr, "Просмотр запасов, управление кормами")
+Rel(edge_ui, population_tracker, "Просмотр статистики поголовья")
+
+Rel(behavior_ai, health_monitor, "Передача данных о поведении для анализа здоровья")
+Rel(behavior_ai, equipment_ctrl, "Автоматические действия при инцидентах")
+
+Rel(health_monitor, population_tracker, "Обновление данных о состоянии животных")
+Rel(equipment_ctrl, inventory_mgr, "Данные о расходе кормов и воды")
+Rel(inventory_mgr, population_tracker, "Расчёт потребностей на основе поголовья")
+
+Rel(behavior_ai, data_sync, "Сохранение событий и метрик")
+Rel(health_monitor, data_sync, "Сохранение данных о здоровье")
+Rel(equipment_ctrl, data_sync, "Сохранение телеметрии оборудования")
+Rel(inventory_mgr, data_sync, "Сохранение данных инвентаря")
+Rel(population_tracker, data_sync, "Сохранение статистики поголовья")
+
+Rel(edge_ui, local_auth, "Локальная авторизация пользователей")
+
+' --- Опциональные внешние интеграции ---
+System_Ext(export_tool, "Data Export Tool", "Внешняя утилита")
+Rel(export_tool, data_sync, "Экспорт данных для отчётности", "REST API")
+
+System_Ext(mobile_app, "Mobile Companion", "Мобильное приложение")
+Rel(mobile_app, edge_ui, "Удалённый доступ к dashboard", "HTTPS (локальная сеть)")
+@enduml

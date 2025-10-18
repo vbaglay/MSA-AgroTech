@@ -1,0 +1,151 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C4 — Диаграмма классов для ключевых сервисов Edge Node
+
+namespace AnimalBehaviorAI {
+  class VideoIngestor {
+    + startStream(cameraId: String): void
+    + stopStream(cameraId: String): void
+  }
+
+  class FrameProcessor {
+    + preprocessFrame(frame: VideoFrame): VideoFrame
+    + extractROI(frame: VideoFrame): RegionOfInterest
+  }
+
+  class AIModelAdapter {
+    + processFrames(frames: List<VideoFrame>): List<Detection>
+    + validateDetection(detection: Detection): boolean
+  }
+
+  class Detection {
+    + isAggressiveBehavior(): boolean
+    + isDistressBehavior(): boolean
+  }
+
+  class EventAnalyzer {
+    + analyzeDetections(detections: List<Detection>): List<BehaviorEvent>
+    + filterFalsePositives(events: List<BehaviorEvent>): List<BehaviorEvent>
+  }
+
+  class AlertGenerator {
+    + generateAlert(event: BehaviorEvent): Alert
+    + escalateAlert(alert: Alert): void
+  }
+
+  class BehaviorEvent {
+    + getSummary(): String
+  }
+}
+
+namespace AnimalHealthMonitor {
+  class HealthAnalyzer {
+    + analyzeBehaviorData(events: List<BehaviorEvent>): HealthAssessment
+    + detectDiseasePatterns(metrics: HealthMetric): DiseaseRisk
+  }
+
+  class DiseaseDetector {
+    + detectDisease(assessment: HealthAssessment): DiseaseDiagnosis
+    + predictOutbreak(assessments: List<HealthAssessment>): OutbreakRisk
+  }
+
+  class MortalityTracker {
+    + recordMortality(animal: AnimalId, cause: DeathCause): void
+    + calculateMortalityRate(): MortalityRate
+  }
+
+  class HealthMetric {
+    + calculateHealthScore(): float
+  }
+}
+
+namespace SmartEquipmentController {
+  class DeviceManager {
+    + discoverDevices(): List<IoTDevice>
+    + registerDevice(device: IoTDevice): void
+  }
+
+  class IoTDevice {
+    + sendCommand(command: DeviceCommand): CommandResult
+    + getTelemetry(): DeviceTelemetry
+  }
+
+  class CommandDispatcher {
+    + dispatchCommand(command: DeviceCommand): void
+    + validateCommand(command: DeviceCommand): boolean
+  }
+
+  class TelemetryCollector {
+    + collectTelemetry(): List<TelemetryData>
+    + aggregateMetrics(): EquipmentMetrics
+  }
+}
+
+namespace PopulationTracker {
+  class AnimalCounter {
+    + countAnimals(detections: List<Detection>): PopulationCount
+    + validateCount(count: PopulationCount): boolean
+  }
+
+  class GrowthTracker {
+    + estimateWeight(animal: AnimalId): float
+    + calculateGrowthRate(animal: AnimalId): GrowthRate
+  }
+
+  class HeadcountReporter {
+    + generateDailyReport(): PopulationReport
+    + generateGrowthReport(): GrowthReport
+  }
+}
+
+' --- Связи между классами AnimalBehaviorAI ---
+VideoIngestor --> FrameProcessor
+FrameProcessor --> AIModelAdapter 
+AIModelAdapter --> Detection 
+Detection --> EventAnalyzer 
+EventAnalyzer --> BehaviorEvent 
+BehaviorEvent --> AlertGenerator 
+
+' --- Связи между классами AnimalHealthMonitor ---
+BehaviorEvent --> HealthAnalyzer 
+HealthAnalyzer --> HealthMetric 
+HealthMetric --> DiseaseDetector 
+DiseaseDetector --> MortalityTracker 
+
+' --- Связи между классами SmartEquipmentController ---
+DeviceManager --> IoTDevice 
+IoTDevice --> CommandDispatcher 
+IoTDevice --> TelemetryCollector 
+
+' --- Связи между классами PopulationTracker ---
+Detection --> AnimalCounter 
+AnimalCounter --> GrowthTracker 
+GrowthTracker --> HeadcountReporter 
+
+' --- Межсервисные связи ---
+AnimalBehaviorAI.BehaviorEvent --> AnimalHealthMonitor.HealthAnalyzer
+AnimalBehaviorAI.Detection --> PopulationTracker.AnimalCounter
+
+note top of AnimalBehaviorAI.AIModelAdapter
+  Интеграция с партнерской AI
+  для детекции аномалий поведения
+end note
+
+note right of AnimalHealthMonitor.DiseaseDetector
+  Выявление заболеваний
+  на основе поведенческих
+  паттернов и метрик здоровья
+end note
+
+note left of SmartEquipmentController.TelemetryCollector
+  Сбор телеметрии с оборудования
+  для мониторинга состояния
+end note
+
+note bottom of PopulationTracker.AnimalCounter
+  Автоматический подсчет
+  животных на основе
+  компьютерного зрения
+end note
+@enduml
